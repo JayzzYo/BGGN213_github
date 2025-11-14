@@ -1,0 +1,149 @@
+---
+title: "Class 05: Data Visualization with GGPLOT"
+author: "Zixuan Zeng (PID: 16142927)"
+format: pdf
+---
+
+Today we r playing with plotting and graphics in R.
+
+There are lots of ways to make cool figures in R.
+There is "base" R graphics (`plot()`,`hist()`,`boxplot()` etc.)
+
+There is also add-on packages, like **ggplot**
+
+```{r}
+head(cars)
+```
+Let's plot this with "base" R:
+
+```{r}
+head(mtcars)
+```
+Let's plot `mpg` vs `disp`
+
+```{r}
+plot(mtcars$mpg,mtcars$disp, pch=16)
+```
+
+```{r}
+hist(mtcars$mpg)
+```
+
+##GGPLOT
+
+The main function in the ggplot2 package is
+**ggplot()**
+`install.packages()`
+The ggplot2 package was installed before this lab session.
+>**N.B.** never run `install.packages()` in quarto source document
+
+
+
+```{r}
+library(ggplot2)
+ggplot(cars) + aes(speed,dist) + geom_point()
+```
+```{r}
+ggplot(cars) + aes(speed) + geom_histogram()
+```
+
+Every ggplot needs at least 3 things:
+
+-The **data**
+-The **aes** mapping
+-The **geom**
+>For simple canned graphs "base" R is nearly always faster
+
+Add a line, a tile, a subtitle, and caption as well as custom axis labels
+
+```{r}
+ggplot(cars) + aes(speed,dist,) + geom_point() + geom_smooth(method = "lm",se=FALSE) + labs(title="silly plot", x = "Speed (MPH)", y = "Distance(ft)", caption = "when is tea time anyway?") + theme_bw()
+```
+
+## plot some expresion data
+
+```{r}
+url <- "https://bioboot.github.io/bimm143_S20/class-material/up_down_expression.txt"
+genes <- read.delim(url)
+head(genes)
+```
+
+> Q1. How many genes are in this wee dataset?
+
+There are `r nrow(genes)` in this dataset.
+
+> Q2. How many "up" regulated genes are there?
+
+```{r}
+sum(genes$State == "up")
+```
+
+```{r}
+table(genes$State)
+```
+
+```{r}
+p <- ggplot(genes) + aes(x=Condition1, y=Condition2, col=State) + geom_point() +labs(x="Control",y="drug treatment") + scale_color_manual(values=c("blue","gray","red"))
+```
+
+
+```{r}
+p + labs(title = "look at me")
+```
+
+Silly example of adding labels
+
+```{r}
+ggplot(genes) + aes(x=Condition1, y=Condition2, col=State, label=Gene) + geom_point() +labs(x="Control",y="drug treatment") + scale_color_manual(values=c("blue","gray","red")) + geom_text()
+```
+
+```{r}
+library(ggrepel)
+ggplot(genes) + aes(x=Condition1, y=Condition2, col=State, label=Gene) + geom_point() +labs(x="Control",y="drug treatment") + scale_color_manual(values=c("blue","gray","red")) + geom_text_repel(max.overlaps = 60) + theme_bw()
+```
+
+
+##going further
+
+Playing with some different layers and the gapmider dataset...
+
+```{r}
+url <- "https://raw.githubusercontent.com/jennybc/gapminder/master/inst/extdata/gapminder.tsv"
+
+gapminder <- read.delim(url)
+```
+
+```{r}
+head(gapminder)
+```
+
+
+```{r}
+tail(gapminder)
+```
+
+```{r}
+ggplot(gapminder) + aes(y=lifeExp,x=gdpPercap, col=continent) + geom_point() + facet_wrap(~continent) + theme_bw()
+```
+
+```{r}
+ggplot(genes) + aes(x=Condition1, y=Condition2, col=State) + geom_point() +labs(x="Control",y="drug treatment") + scale_color_manual(values=c("blue","gray","red")) + facet_grid(~State)
+```
+
+```{r}
+ggplot(genes) + aes(x=Condition1, y=Condition2, col=State) + geom_point(alpha = 0.5) +labs(x="Control",y="drug treatment") + scale_color_manual(values=c("blue","gray","red")) 
+```
+
+```{r}
+ggplot(genes) + aes(x=Condition1, y=Condition2, col=State) + geom_violin() +labs(x="Control",y="drug treatment") + scale_color_manual(values=c("blue","gray","red"))
+```
+
+
+```{r}
+ggplot(genes) + aes(x=Condition1, y=Condition2, col=State) + geom_bin_2d() +labs(x="Control",y="drug treatment") + scale_color_manual(values=c("blue","gray","red"))
+```
+
+```{r}
+ggplot(genes) + aes(x=Condition1, y=Condition2, col=State) + geom_rug() +labs(x="Control",y="drug treatment") + scale_color_manual(values=c("blue","gray","red"))
+```
+
