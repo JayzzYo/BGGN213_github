@@ -1,6 +1,6 @@
 ---
 title: "Class09_Structural1"
-format: pdf
+format: gfm
 author: "Zixuan Zeng (A16142927)"
 toc: true
 ---
@@ -152,7 +152,7 @@ pdbs <- pdbaln(files, fit = TRUE, exefile="msa")
 ids <- basename.pdb(pdbs$id)
 
 # Draw schematic alignment
-plot(pdbs, labels=ids)
+#plot(pdbs, labels=ids)
 ```
 
 ```{r}
