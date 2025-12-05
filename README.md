@@ -9,4 +9,4 @@ Classwork for Bioinfo at [UC San Diego](https://bioboot.github.io/bggn213_F25/).
 - Class 06: [Writing R functions](Class06/Class06.md)
 - Class 07: [Machine learning for Bioinformatics 1](Class07/Class07.md)
 - Class 08: [Unsupervised learning mini-project](Class08/Class08_Miniproject.md) 
-- Class 09: [Structural Bioinformatics](Class09/structure1.md)
+- Class 09: [Structural Bioinformatics](Class09/Class9_structure1.md)
