@@ -1,0 +1,184 @@
+---
+title: "Class09_Structural1"
+format: pdf
+author: "Zixuan Zeng (A16142927)"
+toc: true
+---
+
+## PDB statistics
+
+```{r}
+PDBstat <- read.csv("Data_Export_Summary.csv", row.names = 1)
+PDBstat
+
+# Convert numeric-looking columns from character to numeric
+PDBstat[] <- lapply(PDBstat, function(x) as.numeric(gsub(",", "", x)))
+
+# Check structure
+str(PDBstat)
+
+X.ray <- as.numeric(sub(",","",PDBstat$X.ray))
+EM <- as.numeric(sub(",","",PDBstat$EM))
+Total <- as.numeric(sub(",","",PDBstat$Total))
+```
+
+```{r}
+library(readr)
+stats <- read_csv("Data_Export_Summary.csv")
+stats
+```
+```{r}
+n.total <-sum(stats$Total)
+n.xray <- sum(stats$'X-ray')
+n.em <- sum(stats$EM)
+round(n.xray/n.total * 100, 2) + round(n.em/n.total * 100, 2)
+```
+
+>Q1. 93.7% of the structures in the PDB were determined by X-ray and EM.
+
+```{r}
+stats$Total[1]/sum(stats$Total) * 100
+```
+
+>Q2. 86.05% of the structures in the PDB contain protein only.
+
+>Q2b. Figure shown below
+
+```{r}
+library(ggplot2)
+ggplot(stats, aes(x=reorder(`Molecular Type`,-Total), Total)) + geom_bar(stat="identity") + labs(title="PDB Molecular Type Overview", x="Molecular Type", y="Number of Structures")
+```
+
+
+>Q3. 4866 structures found for HIV-1 protease in the current pdb.
+
+```{r}
+knitr::include_graphics("1HSG.png")
+knitr::include_graphics("1HSG (1).png")
+```
+
+
+>Q4. We can only see the oxygen atom from a water molecule because of the resolution of the structure. Hydrogen atom is not observed at this resolution.
+
+
+```{r}
+knitr::include_graphics("1HSG (2).png")
+```
+
+
+## Introduction to Bio3D in R
+
+```{r}
+library(bio3d)
+hiv <- read.pdb("1HSG")
+hiv
+```
+
+
+```{r}
+attributes(hiv)
+head(hiv$atom)
+```
+```{r}
+pdbseq(hiv) #for both chaim A and B
+```
+
+```{r}
+chainA<-trim.pdb(hiv, chain="A")
+chainA.seq <- pdbseq(chainA)
+```
+
+
+```{r}
+#Blast chain A
+blast <- blast.pdb(chainA.seq)
+head(blast$hit.tbl)
+```
+
+```{r}
+hits <- plot(blast)
+```
+
+```{r}
+hits$pdb.id
+```
+
+
+## Prediction of funtional motions (Normal mode analysis)
+
+```{r}
+adk <- read.pdb("1ake")
+adk_A <- trim.pdb(adk, chain="A")
+adk_A
+m <- nma(adk_A)
+```
+
+```{r}
+plot(m)
+```
+
+
+## Comparative analysis of protein structures
+
+Starting with a sequence or structure ID (accession number), let's run a complete analysis pipeline.
+
+```{r}
+library(bio3d)
+id <- "1ake_A"
+
+aa <- get.seq(id)
+aa
+```
+
+
+```{r,cache=TRUE}
+blast <- blast.pdb(aa)
+hits <- plot(blast)
+```
+
+```{r}
+hits$pdb.id
+```
+
+```{r}
+# Download releated PDB files
+files <- get.pdb(hits$pdb.id, path="pdbs", split=TRUE, gzip=TRUE)
+```
+
+```{r}
+# Align releated PDBs
+pdbs <- pdbaln(files, fit = TRUE, exefile="msa")
+# Vector containing PDB codes for figure axis
+ids <- basename.pdb(pdbs$id)
+
+# Draw schematic alignment
+plot(pdbs, labels=ids)
+```
+
+```{r}
+anno <- pdb.annotate(ids)
+unique(anno$source)
+anno
+```
+
+```{r}
+# Perform PCA
+pc.xray <- pca(pdbs)
+plot(pc.xray)
+
+# Calculate RMSD
+rd <- rmsd(pdbs)
+
+# Structure-based clustering
+hc.rd <- hclust(dist(rd))
+grps.rd <- cutree(hc.rd, k=3)
+
+plot(pc.xray, 1:2, col="grey50", bg=grps.rd, pch=21, cex=1)
+```
+
+```{r}
+mktrj(pc.xray, file="pca_results.pdb")
+```
+
+
+

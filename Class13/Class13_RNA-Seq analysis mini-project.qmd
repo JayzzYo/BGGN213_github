@@ -1,0 +1,175 @@
+---
+title: "Class13_RNA-Seq analysis mini-project"
+author: "Zixuan Zeng(A16142927)"
+format: pdf
+toc: true
+---
+## Background
+
+Today we will run through a complete RNAseq analysis
+The data for for hands-on session comes from GEO entry: GSE37704, which is associated with the following publication:
+
+Trapnell C, Hendrickson DG, Sauvageau M, Goff L et al. "Differential analysis of gene regulation at transcript resolution with RNA-seq". Nat Biotechnol 2013 Jan;31(1):46-53. PMID: 23222703
+
+The authors report on differential analysis of lung fibroblasts in response to loss of the developmental transcription factor HOXA1. Their results and others indicate that HOXA1 is required for lung fibroblast and HeLa cell cycle progression. In particular their analysis show that "loss of HOXA1 results in significant expression level changes in thousands of individual transcripts, along with isoform switching events in key regulators of the cell cycle". For our session we have used their Sailfish gene-level estimated counts and hence are restricted to protein-coding genes only.
+
+## Data Import
+
+```{r}
+metaFile <- "GSE37704_metadata.csv"
+countFile <- "GSE37704_featurecounts.csv"
+
+colData = read.csv(metaFile, row.names=1)
+countData = read.csv(countFile, row.names=1)
+head(colData)
+head(countData)
+```
+
+Check corespondance of `metadata` and `countsdata`
+
+```{r}
+countData <- as.matrix(countData[,-1])
+countData = countData[rowSums(countData) > 0, ]
+head(countData)
+```
+
+
+
+## Setup for DESeq2
+
+```{r}
+library(DESeq2)
+
+dds <- DESeqDataSetFromMatrix(countData = countData,
+                              colData = colData,
+                              design = ~ condition)
+```
+
+
+## Run DESeq2
+
+```{r}
+dds <- DESeq(dds)
+```
+
+
+## Get results
+
+```{r}
+res <- results(dds)
+head(res)
+```
+
+## Add annotation
+
+```{r}
+library(AnnotationDbi)
+library(org.Hs.eg.db)
+res$symbol <- mapIds(org.Hs.eg.db,
+                        keys=row.names(res),
+                        column="SYMBOL",
+                        keytype="ENSEMBL",
+                        multiVals="first")
+
+res$entrez <- mapIds(org.Hs.eg.db,
+                        keys=row.names(res),
+                        column="ENTREZID",
+                        keytype="ENSEMBL",
+                        multiVals="first")
+
+res$name <- mapIds(org.Hs.eg.db,
+                        keys=row.names(res),
+                        column="GENENAME",
+                        keytype="ENSEMBL",
+                        multiVals="first")
+head(res)
+```
+
+
+## Visualize results
+
+```{r}
+plot(res$log2FoldChange, -log10(res$pvalue),
+     pch=20, main="Differential expression",
+     xlab="Log2 fold change", ylab="-Log10 p-value", col="gray")
+abline(h=-log10(0.05), col="red")
+abline(v=1, col="blue")
+abline(v=-1, col="blue")
+
+library(ggplot2)
+mycols <- rep("gray",nrow(res))
+mycols[(res$log2FoldChange) > 2 ] <- "red"
+mycols[(res$log2FoldChange) < -2 ] <- "blue"
+mycols[res$padj >= 0.05] <- "gray"
+ggplot(res) + aes(log2FoldChange,-log(padj)) + geom_point(col=mycols) +geom_vline(xintercept=c(-2,2), col="blue") + geom_hline(yintercept=-log(0.05), col="red") + ggtitle("Differential expression")
+```
+
+
+## Pathway analysis
+
+```{r}
+library(pathview)
+library(gage)
+library(gageData)
+data(kegg.sets.hs)
+data(sigmet.idx.hs)
+# Focus on signaling and metabolic pathways only
+kegg.sets.hs = kegg.sets.hs[sigmet.idx.hs]
+
+# Examine the first 3 pathways
+head(kegg.sets.hs, 3)
+```
+
+```{r}
+foldchanges = res$log2FoldChange
+names(foldchanges) = res$entrez
+head(foldchanges)
+keggres = gage(foldchanges, gsets=kegg.sets.hs)
+head(keggres$less)
+pathview(gene.data=foldchanges, pathway.id="hsa04110")
+```
+
+## GO analysis
+
+Lets try GO analysis and compare with KEGG results
+
+```{r}
+data(go.sets.hs)
+data(go.subs.hs)
+
+# Focus on Biological Process subset of GO
+gobpsets = go.sets.hs[go.subs.hs$BP]
+
+gobpres = gage(foldchanges, gsets=gobpsets, same.dir=TRUE)
+
+lapply(gobpres, head)
+```
+
+```{r}
+head( gobpres$less )
+```
+
+
+## Reactome
+
+Some folks really like online Reactome analysis
+
+To use the website viewer, we want to upload our set of gene symbols for the genes we want to focus on (p-value below 0.05).
+
+```{r}
+sig_genes <- res[res$padj <= 0.05 & !is.na(res$padj), "symbol"]
+write.table(sig_genes, file="significant_genes.txt", row.names=FALSE, col.names=FALSE, quote=FALSE)
+```
+
+
+![R-HSA-68886.jpg](Reactome_pathway.png)
+
+
+## Save results
+
+```{r}
+write.csv(as.data.frame(res), file="DESeq2_results.csv")
+```
+
+
+

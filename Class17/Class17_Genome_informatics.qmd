@@ -1,0 +1,46 @@
+---
+title: "Class17_Genome_informatics"
+author: "Zixuan Zeng (A16142927)"
+format: pdf
+toc: true
+---
+
+## Question 13
+
+Read this file into R and determine the sample size for each genotype and their corresponding median expression levels for each of these genotypes.
+
+Ans: The sample size for AA, AG, and GG genotypes are 108, 233, and 121, respectively. The median expression levels for AA, AG, and GG genotypes are 31.25, 25.065, and 20.074, respectively.
+
+```{r}
+data <- read.table("rs8067378_ENSG00000172057.6.txt")
+data_summary <- summary(data)
+AA_median <- summary(data[data$geno == "A/A", "exp"])
+AA_size <- nrow(data[data$geno == "A/A", ])
+print(AA_median)
+print(AA_size)
+AG_median <- summary(data[data$geno == "A/G", "exp"])
+AG_size <- nrow(data[data$geno == "A/G", ])
+print(AG_median)
+print(AG_size)
+GG_median <- summary(data[data$geno == "G/G", "exp"])
+GG_size <- nrow(data[data$geno == "G/G", ])
+print(GG_median)
+print(GG_size)
+```
+
+## Question 14
+
+Generate a boxplot with a box per genotype, what could you infer from the relative expression value between A/A and G/G displayed in this plot? Does the SNP effect the expression of ORMDL3?
+
+ANS: From the boxplot, we can infer that the expression level of ORMDL3 is highest for the  A/A genotype and lowest for G/G genotype. The result suggests that this SNP is likely to affect the expression of ORMDL3. The result from a two sided t-test (confidence level = 0.95, p-value < 2.2e-16) also suggests a significant difference in expression levels between the A/A and G/G genotypes, further supporting the conclusion that the SNP affects ORMDL3 expression.
+
+
+```{r}
+library(ggplot2)
+ggplot(data) + aes(geno, exp, fill = geno) + geom_boxplot() + 
+  labs(title = "ORMDL3 Expression Levels by Genotype", 
+       x = "Genotype", y = "Expression Level") + theme_classic() 
+
+t.test(exp ~ geno, alternative = ("two.sided"), data = data[data$geno %in% c("A/A", "G/G"), ])
+```
+
